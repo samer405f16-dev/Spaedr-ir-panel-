@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spaedr ir panel</title>
+<style>
+:root{--bg:#0c1117;--panel:#141b24;--line:#243040;--ink:#e8eef6;--mute:#8a9bb0;--acc:#3ddcc4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,system-ui,sans-serif;padding:20px 14px;display:flex;justify-content:center}
+main{width:100%;max-width:460px}
+h1{font-size:24px;margin:6px 0 4px}
+.sub{color:var(--mute);font-size:13px;margin:0 0 18px;line-height:1.8}
+.row{display:flex;gap:10px;margin-bottom:16px}
+button{flex:1;font:inherit;font-size:15px;cursor:pointer;border-radius:12px;border:1px solid var(--line);padding:14px 8px;color:var(--ink);background:var(--panel)}
+button.m{background:var(--acc);color:#04201b;border-color:var(--acc);font-weight:bold}
+button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+pre{direction:ltr;text-align:left;unicode-bidi:plaintext;background:#0a0f15;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;word-break:break-all;min-height:70px;margin:0 0 12px;font-family:ui-monospace,Menlo,monospace}
+a{display:none;text-align:center;text-decoration:none;color:var(--acc);border:1px solid var(--acc);border-radius:12px;padding:12px;margin-bottom:10px}
+.cp{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>Spaedr ir panel</h1>
+<p class="sub">پروکسی و کانفیگ SOCKS5. تا وقتی پنجره‌ی ترموکس بسته نشده کار می‌کنند.</p>
+<div class="row">
+  <button class="m" id="b1" onclick="go('/proxy')">ساخت پروکسی</button>
+  <button class="m" id="b2" onclick="go('/config')">ساخت کانفیگ</button>
+  <button onclick="go('/off')">خاموش</button>
+</div>
+<pre id="o">برای شروع یکی از دکمه‌ها را بزن</pre>
+<a id="tg" href="#">افزودن به تلگرام</a>
+<button class="cp" id="cp" onclick="copy()">کپی متن</button>
+</main>
+<script>
+const $=i=>document.getElementById(i);
+async function go(u){
+  $('o').textContent='⏳ چند ثانیه صبر کن...';
+  $('tg').style.display='none';$('cp').style.display='none';
+  try{
+    const r=await(await fetch(u,{method:'POST'})).json();
+    $('o').textContent=r.t;
+    if(r.tg){$('tg').href=r.tg;$('tg').style.display='block'}
+    if(u==='/config'){$('cp').style.display='block'}
+  }catch(e){$('o').textContent='❌ ارتباط با ترموکس قطع شد. پنل را دوباره با دستور panel بالا بیاور.'}
+}
+async function copy(){
+  try{await navigator.clipboard.writeText($('o').textContent);$('cp').textContent='کپی شد'}catch(e){}
+  setTimeout(()=>$('cp').textContent='کپی متن',1500);
+}
+</script>
+</body>
+</html>
