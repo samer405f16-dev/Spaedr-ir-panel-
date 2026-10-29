@@ -1,11 +1,27 @@
-import http.server as h, subprocess as sp, os, json, time, random, atexit, shlex, threading, copy
+import http.server as h, subprocess as sp, os, json, time, random, atexit, shlex, threading, copy, socket
 
 D = os.path.expanduser("~/sp")
 CF = D + "/config.json"
 RUN = D + "/run.json"
 X = D + "/xray/xray"
 HOST = "127.0.0.1"
-PORT = int(open(D + "/port").read().strip())
+NAME = "S.p.e.d.r.n.g.localhost"
+
+
+def pick():
+    while True:
+        p = random.randint(20000, 40000)
+        s = socket.socket()
+        try:
+            s.bind((HOST, p))
+            return p
+        except OSError:
+            pass
+        finally:
+            s.close()
+
+
+PORT = pick()
 S = {"p": None, "ip": None, "err": None, "n": "xray"}
 
 
@@ -127,9 +143,9 @@ class R(h.BaseHTTPRequestHandler):
     log_message = lambda *a: 0
 
     def allowed(self):
-        hs = (f"127.0.0.1:{PORT}", f"localhost:{PORT}")
-        o = self.headers.get("Origin")
-        return self.headers.get("Host", "") in hs and ((not o) or o in tuple("http://" + x for x in hs))
+        hs = (f"127.0.0.1:{PORT}", f"localhost:{PORT}", f"{NAME.lower()}:{PORT}")
+        o = (self.headers.get("Origin") or "").lower()
+        return self.headers.get("Host", "").lower() in hs and ((not o) or o in tuple("http://" + x for x in hs))
 
     def out(self, body, ctype, code=200):
         b = body.encode()
@@ -160,8 +176,8 @@ class R(h.BaseHTTPRequestHandler):
         self.out(json.dumps(d), "application/json")
 
 
-URL = f"http://{HOST}:{PORT}"
-print(f"\n🛡️ Spaedr ir panel\nآدرس پنل (خودکار باز می‌شود):\n\n   {URL}\n\nبرای خروج: Ctrl+C\n")
+URL = f"http://{NAME}:{PORT}"
+print(f"\n🛡️ Spaedr ir panel\nآدرس پنل (خودکار باز می‌شود):\n\n   {URL}\n\nاگر باز نشد این را بزن:\n   http://{HOST}:{PORT}\n\nبرای خروج: Ctrl+C\n")
 
 
 def opener():
