@@ -8,9 +8,11 @@ HOST = "127.0.0.1"
 NAME = "S.p.e.d.r.n.g.localhost"
 
 
-def pick():
+def pick(lo=20000, hi=40000, ex=()):
     while True:
-        p = random.randint(20000, 40000)
+        p = random.randint(lo, hi)
+        if p in ex:
+            continue
         s = socket.socket()
         try:
             s.bind((HOST, p))
@@ -22,7 +24,7 @@ def pick():
 
 
 PORT = pick()
-S = {"p": None, "ip": None, "err": None, "n": "xray"}
+S = {"p": None, "c": None, "ip": None, "err": None, "n": "xray"}
 
 
 def sh(c):
@@ -69,11 +71,16 @@ def acmd(c, p):
     return o
 
 
-def withport(c, p):
+def withport(c, p, cp=None):
     c = copy.deepcopy(c)
     for ib in c.get("inbounds", []):
         if ib.get("tag") == "mixed-in" or ib.get("protocol") in ("mixed", "socks"):
             ib["port"] = p
+            if cp:
+                ib2 = copy.deepcopy(ib)
+                ib2["tag"] = "mixed-in-2"
+                ib2["port"] = cp
+                c["inbounds"].append(ib2)
             break
     return c
 
@@ -107,7 +114,8 @@ def proxy():
         c = load()
     except Exception:
         return {"t": "❌ config.json خراب است."}
-    p = random.randint(40000, 60000)
+    p = pick(40000, 50000, (PORT,))
+    cp = pick(50001, 60000, (PORT, p))
     killall()
     time.sleep(1)
     log = open(D + "/engine.log", "w")
@@ -118,12 +126,12 @@ def proxy():
             PROC[0] = sp.Popen(acmd(c, p), cwd=D + "/data", stdin=sp.DEVNULL, stdout=log, stderr=sp.STDOUT)
         else:
             S["n"] = "xray"
-            json.dump(withport(c, p), open(RUN, "w"))
+            json.dump(withport(c, p, cp), open(RUN, "w"))
             PROC[0] = sp.Popen([X, "run", "-c", RUN], stdin=sp.DEVNULL, stdout=log, stderr=sp.STDOUT,
                                env={**os.environ, "XRAY_LOCATION_ASSET": D + "/xray"})
     except Exception:
         return {"t": "❌ موتور نصب نیست. کد نصب را دوباره بزن."}
-    S.update(p=p, ip=None, err=None)
+    S.update(p=p, c=(p if S["n"] == "aether" else cp), ip=None, err=None)
     threading.Thread(target=watch, args=(p,), daemon=True).start()
     return {"t": "⏳ در حال ساخت پروکسی... (چند ثانیه تا یک‌ونیم دقیقه)", "wait": 1}
 
@@ -131,7 +139,8 @@ def proxy():
 def status():
     if S["ip"]:
         p = S["p"]
-        return {"done": 1, "t": f"✅ پروکسی SOCKS5 ساخته شد\nsocks5://127.0.0.1:{p}\nIP: {S['ip']}",
+        return {"done": 1,
+                "t": f"✅ آماده است\n\n🔌 پروکسی تلگرام:\nsocks5://127.0.0.1:{p}\n\n📦 پورت کانفیگ:\nsocks5://127.0.0.1:{S['c']}\n\nIP: {S['ip']}",
                 "tg": f"https://t.me/socks?server=127.0.0.1&port={p}"}
     if S["err"]:
         return {"done": 1, "t": S["err"]}
@@ -143,7 +152,7 @@ def conf():
         c = load()
     except Exception:
         return {"t": "❌ config.json خراب است."}
-    p = S["p"] or random.randint(40000, 60000)
+    p = S["c"] or S["p"] or pick(50001, 60000, (PORT,))
     if is_aether(c):
         j = json.dumps(c, indent=1, ensure_ascii=False).replace("10819", str(p))
     else:
@@ -200,5 +209,18 @@ def opener():
         pass
 
 
+def auto():
+    proxy()
+    for _ in range(40):
+        time.sleep(3)
+        if S["ip"] or S["err"]:
+            break
+    s = status()
+    print("\n" + s.get("t", "⏳ هنوز آماده نیست، پنل را باز کن") + "\n")
+    if s.get("tg"):
+        print("لینک افزودن به تلگرام:\n" + s["tg"] + "\n")
+
+
 threading.Thread(target=opener, daemon=True).start()
+threading.Thread(target=auto, daemon=True).start()
 h.ThreadingHTTPServer((HOST, PORT), R).serve_forever()
