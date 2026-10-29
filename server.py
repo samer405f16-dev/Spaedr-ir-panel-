@@ -29,7 +29,17 @@ def sh(c):
     return sp.run(c, shell=True, capture_output=True, text=True).stdout.strip()
 
 
+PROC = [None]
+
+
 def killall():
+    pr = PROC[0]
+    if pr is not None and pr.poll() is None:
+        pr.terminate()
+        try:
+            pr.wait(3)
+        except Exception:
+            pr.kill()
     sh("pkill -x aether; pkill -x xray")
 
 
@@ -72,8 +82,10 @@ def watch(p):
     n = S["n"]
     for _ in range(35):
         time.sleep(3)
-        if not sh(f"pgrep -x {n}"):
-            S["err"] = f"❌ {n} بسته شد\n" + sh(f"tail -4 {D}/engine.log")
+        pr = PROC[0]
+        if pr is None or pr.poll() is not None:
+            rc = pr.returncode if pr is not None else "?"
+            S["err"] = f"❌ {n} بسته شد (کد {rc})\n" + sh(f"tail -4 {D}/engine.log")
             return
         ip = ""
         if n == "aether":
@@ -103,12 +115,12 @@ def proxy():
         if is_aether(c):
             S["n"] = "aether"
             os.makedirs(D + "/data", exist_ok=True)
-            sp.Popen(acmd(c, p), cwd=D + "/data", stdin=sp.DEVNULL, stdout=log, stderr=sp.STDOUT)
+            PROC[0] = sp.Popen(acmd(c, p), cwd=D + "/data", stdin=sp.DEVNULL, stdout=log, stderr=sp.STDOUT)
         else:
             S["n"] = "xray"
             json.dump(withport(c, p), open(RUN, "w"))
-            sp.Popen([X, "run", "-c", RUN], stdin=sp.DEVNULL, stdout=log, stderr=sp.STDOUT,
-                     env={**os.environ, "XRAY_LOCATION_ASSET": D + "/xray"})
+            PROC[0] = sp.Popen([X, "run", "-c", RUN], stdin=sp.DEVNULL, stdout=log, stderr=sp.STDOUT,
+                               env={**os.environ, "XRAY_LOCATION_ASSET": D + "/xray"})
     except Exception:
         return {"t": "❌ موتور نصب نیست. کد نصب را دوباره بزن."}
     S.update(p=p, ip=None, err=None)
