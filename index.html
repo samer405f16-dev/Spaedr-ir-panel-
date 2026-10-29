@@ -17,33 +17,38 @@ button.m{background:var(--acc);color:#04201b;border-color:var(--acc);font-weight
 button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 pre{direction:ltr;text-align:left;unicode-bidi:plaintext;background:#0a0f15;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;word-break:break-all;min-height:70px;margin:0 0 12px;font-family:ui-monospace,Menlo,monospace}
 a{display:none;text-align:center;text-decoration:none;color:var(--acc);border:1px solid var(--acc);border-radius:12px;padding:12px;margin-bottom:10px}
-.cp{display:none}
+.cp{display:none;width:100%}
 </style>
 </head>
 <body>
 <main>
 <h1>Spaedr ir panel</h1>
-<p class="sub">پروکسی و کانفیگ SOCKS5. تا وقتی پنجره‌ی ترموکس بسته نشده کار می‌کنند.</p>
+<p class="sub">پروکسی و کانفیگ SOCKS5. نیازی به کانفیگ نیست. تا وقتی پنجره‌ی ترموکس بسته نشده کار می‌کنند.</p>
 <div class="row">
-  <button class="m" id="b1" onclick="go('/proxy')">ساخت پروکسی</button>
-  <button class="m" id="b2" onclick="go('/config')">ساخت کانفیگ</button>
+  <button class="m" onclick="go('/proxy')">ساخت پروکسی</button>
+  <button class="m" onclick="go('/config')">ساخت کانفیگ</button>
   <button onclick="go('/off')">خاموش</button>
 </div>
-<pre id="o">برای شروع یکی از دکمه‌ها را بزن</pre>
+<pre id="o">برای شروع «ساخت پروکسی» را بزن</pre>
 <a id="tg" href="#">افزودن به تلگرام</a>
 <button class="cp" id="cp" onclick="copy()">کپی متن</button>
 </main>
 <script>
 const $=i=>document.getElementById(i);
+let timer=null;
+async function post(u){return (await fetch(u,{method:'POST'})).json()}
+function reset(){clearInterval(timer);$('tg').style.display='none';$('cp').style.display='none'}
 async function go(u){
-  $('o').textContent='⏳ چند ثانیه صبر کن...';
-  $('tg').style.display='none';$('cp').style.display='none';
+  reset();$('o').textContent='⏳ ...';
   try{
-    const r=await(await fetch(u,{method:'POST'})).json();
-    $('o').textContent=r.t;
-    if(r.tg){$('tg').href=r.tg;$('tg').style.display='block'}
-    if(u==='/config'){$('cp').style.display='block'}
-  }catch(e){$('o').textContent='❌ ارتباط با ترموکس قطع شد. پنل را دوباره با دستور panel بالا بیاور.'}
+    const r=await post(u);$('o').textContent=r.t;
+    if(u==='/config')$('cp').style.display='block';
+    if(r.wait){let n=0;timer=setInterval(async()=>{
+      n++;const s=await(await fetch('/status')).json();
+      if(s.done){clearInterval(timer);$('o').textContent=s.t;if(s.tg){$('tg').href=s.tg;$('tg').style.display='block'}}
+      else if(n>40){clearInterval(timer);$('o').textContent='❌ زمان تمام شد'}
+    },3000)}
+  }catch(e){$('o').textContent='❌ ارتباط با ترموکس قطع شد. دوباره panel را بزن.'}
 }
 async function copy(){
   try{await navigator.clipboard.writeText($('o').textContent);$('cp').textContent='کپی شد'}catch(e){}
