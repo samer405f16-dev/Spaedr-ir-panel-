@@ -1,0 +1,42 @@
+{
+  "log": {"loglevel": "warning"},
+  "inbounds": [
+    {
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "protocol": "mixed",
+      "settings": {"auth": "noauth", "udp": true},
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"], "routeOnly": true}
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "188.114.96.3",
+            "port": 443,
+            "users": [{"id": "3fb0a00b-d64a-4d81-840a-1aafd20d375f", "encryption": "none"}]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "host": "netra-98b156.h9zl52enufus.workers.dev",
+          "path": "/vl/XiKxZtP0z6X2yACZSw4PZB5QuBVh0Oj9?ed=2560"
+        },
+        "tlsSettings": {
+          "serverName": "netra-98b156.h9zl52enufus.workers.dev",
+          "fingerprint": "chrome",
+          "alpn": ["http/1.1"]
+        }
+      }
+    },
+    {"tag": "direct", "protocol": "freedom"}
+  ]
+}
