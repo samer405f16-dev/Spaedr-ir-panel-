@@ -1,4 +1,4 @@
-import http.server as h, subprocess as sp, os, json, time, random, atexit, shlex, threading, copy, socket
+import http.server as h, subprocess as sp, os, json, time, random, atexit, shlex, threading, copy, socket, secrets
 
 D = os.path.expanduser("~/sp")
 CF = D + "/config.json"
@@ -24,6 +24,9 @@ def pick(lo=20000, hi=40000, ex=()):
 
 
 PORT = pick()
+TOKEN = secrets.token_urlsafe(9)
+SITE = "https://samer405f16-dev.github.io"
+SITE_URL = SITE + f"/Spaedr-ir-panel-/#p={PORT}&t={TOKEN}"
 S = {"p": None, "c": None, "ip": None, "err": None, "n": "xray"}
 
 
@@ -166,13 +169,33 @@ class R(h.BaseHTTPRequestHandler):
     def allowed(self):
         hs = (f"127.0.0.1:{PORT}", f"localhost:{PORT}", f"{NAME.lower()}:{PORT}")
         o = (self.headers.get("Origin") or "").lower()
-        return self.headers.get("Host", "").lower() in hs and ((not o) or o in tuple("http://" + x for x in hs))
+        if self.headers.get("Host", "").lower() not in hs:
+            return False
+        if not o or o in tuple("http://" + x for x in hs):
+            return True
+        return o == SITE and self.headers.get("X-Token") == TOKEN
+
+    def do_OPTIONS(self):
+        o = (self.headers.get("Origin") or "").lower()
+        if o != SITE:
+            return self.out("forbidden", "text/plain", 403)
+        self.send_response(204)
+        for k, v in (("Access-Control-Allow-Origin", SITE), ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+                     ("Access-Control-Allow-Headers", "X-Token, Content-Type"),
+                     ("Access-Control-Allow-Private-Network", "true"),
+                     ("Access-Control-Max-Age", "600"), ("Vary", "Origin")):
+            self.send_header(k, v)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def out(self, body, ctype, code=200):
         b = body.encode()
         self.send_response(code)
         self.send_header("Content-Type", ctype + "; charset=utf-8")
         self.send_header("Content-Length", str(len(b)))
+        if (self.headers.get("Origin") or "").lower() == SITE:
+            self.send_header("Access-Control-Allow-Origin", SITE)
+            self.send_header("Vary", "Origin")
         self.end_headers()
         self.wfile.write(b)
 
@@ -181,6 +204,11 @@ class R(h.BaseHTTPRequestHandler):
             return self.out("forbidden", "text/plain", 403)
         if self.path == "/status":
             return self.out(json.dumps(status()), "application/json")
+        if self.path == "/info":
+            pr = PROC[0]
+            return self.out(json.dumps({"panel": URL, "host": HOST, "tg": S["p"], "cfg": S["c"], "ip": S["ip"],
+                                        "on": bool(pr is not None and pr.poll() is None), "err": S["err"]}),
+                            "application/json")
         self.out(open(D + "/index.html", encoding="utf-8").read(), "text/html")
 
     def do_POST(self):
@@ -198,7 +226,7 @@ class R(h.BaseHTTPRequestHandler):
 
 
 URL = f"http://{NAME}:{PORT}"
-print(f"\n🛡️ Spaedr ir panel\nآدرس پنل (خودکار باز می‌شود):\n\n   {URL}\n\nاگر باز نشد این را بزن:\n   http://{HOST}:{PORT}\n\nبرای خروج: Ctrl+C\n")
+print(f"\n🛡️ Spaedr ir panel\n🛡️ آدرس Spaedr ng (خودکار باز می‌شود):\n\n   {URL}\n\n🌐 لینک سایت (اختیاری):\n   {SITE_URL}\n\nبرای خروج: Ctrl+C\n")
 
 
 def opener():
