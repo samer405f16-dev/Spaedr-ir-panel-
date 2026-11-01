@@ -155,6 +155,7 @@ def conf():
         c = load()
     except Exception:
         return {"t": "❌ config.json خراب است."}
+    c["remarks"] = "SpaedrNG"
     p = S["c"] or S["p"] or pick(50001, 60000, (PORT,))
     if is_aether(c):
         j = json.dumps(c, indent=1, ensure_ascii=False).replace("10819", str(p))
