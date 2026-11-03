@@ -1,9 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Spaedr ir panel installer
-R="https://raw.githubusercontent.com/samer405f16-dev/Spaedr-ir-panel-/main"
+# Spaedr ng lite installer (proxy only, no config needed)
+R="https://raw.githubusercontent.com/samer405f16-dev/Spaedr-ir-panel-/main/lite"
 
 mkdir -p /data/data/com.termux/cache/apt/archives/partial 2>/dev/null
-for t in curl wget unzip; do command -v $t >/dev/null || pkg install -y $t; done
+command -v curl >/dev/null || pkg install -y curl
 
 if ! command -v python >/dev/null; then
   pkg install -y python || {
@@ -13,26 +13,17 @@ if ! command -v python >/dev/null; then
   }
 fi
 
-mkdir -p ~/sp/data && cd ~/sp
-for f in server.py index.html config.json; do curl -sL "$R/$f" -o "$f"; done
-[ -f port ] || echo $((20000 + RANDOM % 20000)) > port
-
-if grep -q aetherCommand config.json; then
-  command -v aether >/dev/null || {
-    cd ~
-    curl -fsSL https://raw.githubusercontent.com/CluvexStudio/aether/main/aether.sh -o aether.sh \
-      && chmod +x aether.sh && ./aether.sh install
-    cd ~/sp
-  }
-else
-  [ -f xray/xray ] || {
-    wget -qO x.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-android-arm64-v8a.zip \
-    && unzip -qo x.zip -d xray && chmod +x xray/xray
-  }
+if ! command -v aether >/dev/null; then
+  cd ~
+  curl -fsSL https://raw.githubusercontent.com/CluvexStudio/aether/main/aether.sh -o aether.sh \
+    && chmod +x aether.sh && ./aether.sh install
 fi
 
-echo 'pkill -f sp/server.py; pkill -x aether; pkill -x xray; sleep 1; termux-wake-lock; python ~/sp/server.py' > $PREFIX/bin/panel
-chmod +x $PREFIX/bin/panel
+mkdir -p ~/spl/data && cd ~/spl
+for f in server.py index.html; do curl -sL "$R/$f" -o "$f"; done
+
+echo 'pkill -f spl/server.py; pkill -x aether; sleep 1; termux-wake-lock; python ~/spl/server.py' > $PREFIX/bin/spaedr
+chmod +x $PREFIX/bin/spaedr
 
 termux-wake-lock
 exec python server.py
