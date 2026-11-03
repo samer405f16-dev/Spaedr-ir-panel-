@@ -7,76 +7,44 @@
 <style>
 :root{--bg:#0c1117;--panel:#141b24;--line:#243040;--ink:#e8eef6;--mute:#8a9bb0;--acc:#3ddcc4}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,system-ui,sans-serif;padding:20px 14px;display:flex;justify-content:center}
-main{width:100%;max-width:460px}
-h1{font-size:24px;margin:6px 0 4px}
-.sub{color:var(--mute);font-size:13px;margin:0 0 18px;line-height:1.8}
-.big{display:flex;align-items:center;gap:12px;width:100%;text-align:right;font:inherit;font-size:16px;cursor:pointer;border-radius:14px;border:1px solid var(--line);padding:16px;color:var(--ink);background:var(--panel);margin-bottom:10px}
-.big b{display:block;font-size:16px}
-.big small{display:block;color:var(--mute);font-size:12px;margin-top:3px}
-.big span.i{font-size:24px}
-.big:focus-visible,a:focus-visible,.sm:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-pre{direction:ltr;text-align:left;unicode-bidi:plaintext;background:#0a0f15;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;word-break:break-all;min-height:80px;margin:14px 0 12px;font-family:ui-monospace,Menlo,monospace}
-a{display:none;text-align:center;text-decoration:none;color:#04201b;background:var(--acc);border-radius:12px;padding:13px;margin-bottom:10px;font-weight:bold}
-.sm{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);padding:10px 14px;color:var(--ink);background:var(--panel);margin-left:6px}
-.cp{display:none}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,system-ui,sans-serif;padding:24px 14px;display:flex;justify-content:center}
+main{width:100%;max-width:440px;text-align:center}
+h1{font-size:26px;margin:10px 0 6px}
+.sub{color:var(--mute);font-size:13px;margin:0 0 24px;line-height:1.8}
+button.main{width:100%;font:inherit;font-size:19px;font-weight:bold;cursor:pointer;border:0;border-radius:16px;padding:20px;color:#04201b;background:var(--acc)}
+button.main:disabled{opacity:.6}
+button:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+pre{direction:ltr;text-align:left;unicode-bidi:plaintext;background:#0a0f15;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13px;white-space:pre-wrap;word-break:break-all;min-height:90px;margin:20px 0 12px;font-family:ui-monospace,Menlo,monospace}
+a{display:none;text-decoration:none;color:var(--acc);border:1px solid var(--acc);border-radius:12px;padding:13px;margin-bottom:12px}
+.off{font:inherit;font-size:13px;cursor:pointer;border-radius:10px;border:1px solid var(--line);padding:9px 14px;color:var(--mute);background:var(--panel)}
 </style>
 </head>
 <body>
 <main>
 <h1>Spaedr ng</h1>
-<p class="sub">همه‌چیز از داخل ترموکس گوشی خودت. تا وقتی پنجره‌ی ترموکس بسته نشده کار می‌کند.</p>
-
-<button class="big" onclick="info()"><span class="i">📡</span><span><b>دریافت آی‌پی و پورت</b><small>آدرس، پورت پروکسی و پورت کانفیگ</small></span></button>
-<button class="big" onclick="proxy()"><span class="i">✈️</span><span><b>پروکسی تلگرام</b><small>ساخت پروکسی SOCKS5 با پورت رندوم</small></span></button>
-<button class="big" onclick="conf()"><span class="i">📦</span><span><b>کانفیگ</b><small>کانفیگ SOCKS5 با پورت رندوم جدا</small></span></button>
-
-<pre id="o">یکی از گزینه‌ها را بزن</pre>
+<p class="sub">ساخت پروکسی SOCKS5 برای تلگرام. تا وقتی پنجره‌ی ترموکس بسته نشده کار می‌کند.</p>
+<button class="main" id="b" onclick="make()">ساخت پروکسی</button>
+<pre id="o">برای شروع «ساخت پروکسی» را بزن</pre>
 <a id="tg" href="#">افزودن به تلگرام</a>
-<button class="sm cp" id="cp" onclick="copy()">کپی متن</button>
-<button class="sm" onclick="off()">خاموش کردن</button>
+<button class="off" onclick="off()">خاموش کردن</button>
 </main>
 <script>
 const $=i=>document.getElementById(i);
-const Hh=new URLSearchParams(location.hash.slice(1));
-const REMOTE=!/^(127\.0\.0\.1|localhost|.*\.localhost)$/.test(location.hostname);
-const BASE=REMOTE?'http://127.0.0.1:'+(Hh.get('p')||''):'';
-const HD={'X-Token':Hh.get('t')||''};
-async function api(u,m){return (await fetch(BASE+u,{method:m||'GET',headers:HD})).json()}
 let timer=null;
-function reset(){clearInterval(timer);$('tg').style.display='none';$('cp').style.display='none'}
-function fail(){$('o').textContent='❌ به ترموکس وصل نشد. مطمئن شو پنل در ترموکس بالاست (دستور panel).'}
-function tgLink(h,p){$('tg').href='https://t.me/socks?server='+h+'&port='+p;$('tg').style.display='block'}
-async function info(){
-  reset();$('o').textContent='⏳ ...';
-  try{const r=await api('/info');
-    if(r.on&&r.ip){
-      $('o').textContent='آدرس پنل: '+r.panel+'\nآی‌پی پروکسی: '+r.host+'\nپورت پروکسی تلگرام: '+r.tg+'\nپورت کانفیگ: '+r.cfg+'\nآی‌پی خروجی: '+r.ip;
-      tgLink(r.host,r.tg);
-    }else if(r.err){$('o').textContent=r.err}
-    else $('o').textContent=r.on?'⏳ پروکسی در حال راه‌اندازی است، چند ثانیه بعد دوباره بزن':'پروکسی روشن نیست. «پروکسی تلگرام» را بزن.';
-  }catch(e){fail()}
-}
-async function proxy(){
-  reset();$('o').textContent='⏳ ...';
+async function api(u,m){return (await fetch(u,{method:m||'GET'})).json()}
+function show(s){$('o').textContent=s.t;if(s.tg){$('tg').href=s.tg;$('tg').style.display='block'}$('b').disabled=false}
+async function make(){
+  clearInterval(timer);$('tg').style.display='none';$('b').disabled=true;$('o').textContent='⏳ ...';
   try{const r=await api('/proxy','POST');$('o').textContent=r.t;
+    if(!r.wait){$('b').disabled=false;return}
     let n=0;timer=setInterval(async()=>{n++;
-      try{const s=await api('/status');
-        if(s.done){clearInterval(timer);$('o').textContent=s.t;if(s.tg){$('tg').href=s.tg;$('tg').style.display='block'}}
-        else if(n>40){clearInterval(timer);$('o').textContent='❌ زمان تمام شد'}
-      }catch(e){clearInterval(timer);fail()}},3000);
-  }catch(e){fail()}
+      try{const s=await api('/status');if(s.done){clearInterval(timer);show(s)}else if(n>40){clearInterval(timer);$('o').textContent='❌ زمان تمام شد';$('b').disabled=false}}
+      catch(e){clearInterval(timer);$('o').textContent='❌ ارتباط با ترموکس قطع شد';$('b').disabled=false}
+    },3000);
+  }catch(e){$('o').textContent='❌ ارتباط با ترموکس قطع شد. دستور spaedr را بزن.';$('b').disabled=false}
 }
-async function conf(){
-  reset();$('o').textContent='⏳ ...';
-  try{const r=await api('/config','POST');$('o').textContent=r.t;$('cp').style.display='inline-block'}catch(e){fail()}
-}
-async function off(){reset();try{const r=await api('/off','POST');$('o').textContent=r.t}catch(e){fail()}}
-async function copy(){
-  try{await navigator.clipboard.writeText($('o').textContent);$('cp').textContent='کپی شد'}catch(e){}
-  setTimeout(()=>$('cp').textContent='کپی متن',1500);
-}
-info();
+async function off(){clearInterval(timer);$('tg').style.display='none';try{const r=await api('/off','POST');$('o').textContent=r.t}catch(e){}$('b').disabled=false}
+(async()=>{try{const s=await api('/status');if(s.done)show(s)}catch(e){}})();
 </script>
 </body>
 </html>
